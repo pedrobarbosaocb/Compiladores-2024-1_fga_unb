@@ -1,0 +1,183 @@
+head	1.2;
+access;
+symbols;
+locks
+	lhn7c5:1.2; strict;
+comment	@# @;
+
+
+1.2
+date	2014.11.10.04.48.04;	author lhn7c5;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2014.11.08.21.45.37;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@Done scanner and parser.
+@
+
+
+1.2
+log
+@Done P2.
+@
+text
+@P2 README (2 parts: A and B)
+Student: Loc Nguyen
+Email: lhn7c5@@mail.umsl.edu
+
+-------------------------------------------------------------
+A. Requirements summary:
+
+1. Lexical rules:
+	- Case insensitive
+	- All English letters (upper and lower), digits, 
+		and extra characters as seen below, plus whitespace
+	- Identifiers
+		+ begin with a letter, and continue with any number of letters
+		+ assume no identifier is longer than 8 characters
+	- Keywords (reserved), include: 
+		start finish then if repeat var int float do read print void return dummy program
+	- Relational operators, include: == < > =!= => =< 
+	- Other operators, include: = : + - * / % 
+	- Delimiters, include: . ( ) , { } ; [ ] 
+	- Numbers:
+		+ any sequence of decimal digits, no sign
+		+ assume no number is longer than 8 digits
+	- Other assumption: 
+		+ No whitespace needed to separate tokens 
+			except when this changes the tokens (as x y vs xy)
+		+ Comments start with // and end with new line
+
+
+2. Syntax grammar:
+<program>	-->		<var> do <block>  return
+<block>		-->		start <var> <stats> finish
+<var>		-->		empty | <type> ID <mvars> .
+<type>		-->		var
+<mvars>		-->		empty | : ID <mvars>
+<expr>		-->		<T> * <expr> | <T> / <expr> | <T>
+<T>		-->		<F> + <T> | <F> - <T> | <F>
+<F>		-->		- <F> | <R>
+<R>		-->		(<expr>) | ID | Number   
+<stats>		-->		<stat>  <mStat>
+<mStat>		-->		empty | <stat>  <mStat>
+<stat>		-->		<in> | <out> | <block> | <if> | <loop> | <assign>
+<in>		-->		read ID .
+<out>		-->		print <expr> .
+<if>		-->		if [ <expr> <RO> <expr> ]  <block>             
+<loop>		-->		repeat [ <expr> <RO> <expr> ] <block>
+<assign>	-->		ID = <expr> .
+<RO>		-->		=< | => | == |  > | <  |  =!= 
+
+
+3. Other requirements:
+	- Invocation of the program is:
+		testParser [filename]
+	where input source file is filename.lan (extension .lan is implicit).
+	Program will read the same data from keyboard via redirecting 
+		from a file if filename is not specified. 
+		For example, testParser < filename.lan 
+
+	- Perform necessary validations. 
+		For example, if found invalid symbols, 
+		show error message with line number, and then abort the program
+
+-------------------------------------------------------------
+
+B. What I have done:
+
+1. The Scanner has been re-written from P1 
+		which was also posted on CodeProject at: 
+		http://www.codeproject.com/Articles/833206/Lexical-analyzer-an-example
+
+		I really love the new P2's scanner version. 
+		Thanks to the idea of tdParser sample code on /accounts/.../janikowc/cs4280
+
+2. First I re-wrote the grammar as follow: 
+<program>	-->		<var> do <block>  return
+<block>		-->		start <var> <stats> finish
+<var>		-->		var ID <mvars> . | empty
+<mvars>		-->		: ID <mvars> | empty
+<expr>		-->		<T> <X>
+<X>		-->		* <expr> | / <expr> | empty
+<T>		-->		<F> <Y>
+<Y>		-->		+ <T> | - <T> | empty
+<F>		-->		- <F> | <R>
+<R>		-->		(<expr>) | ID | Number   
+<stats>		-->		<stat>  <mStat>
+<mStat>		-->		<stat>  <mStat> | empty
+<stat>		-->		<in> | <out> | <block> | <if> | <loop> | <assign>
+<in>		-->		read ID .
+<out>		-->		print <expr>  .
+<if>		-->		if [ <expr> <RO> <expr> ]  <block>             
+<loop>		-->		repeat [ <expr> <RO> <expr> ] <block>
+<assign>	-->		ID = <expr> .
+<RO>		-->		=< | => | == |  > | <  |  =!= 
+
+But then I came back to the original grammar, just replace the <type> production by var directly.
+
+3. The program does:
+	- main.c validate input source file,
+		then calls scanner.c to scan for tokens, ended with EOFtk,
+		then calls parser.c to validate syntax based on grammar rules.
+
+	- program displays the source file after validation OK and before the scanner, 
+		then, displays again the source file before the parser tree for 
+			convenient checking and readability.
+
+4. Some test input files available are:
+	file.lan
+	good1.lan
+	good2.lan
+	bad1.lan
+
+
+/END README
+
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d2 2
+d36 3
+a38 3
+<T>			-->		<F> + <T> | <F> - <T> | <F>
+<F>			-->		- <F> | <R>
+<R>			-->		(<expr>) | ID | Number   
+d52 1
+a52 1
+		parser [filename]
+d56 1
+a56 1
+		For example, parser < filename.lan 
+d73 1
+a73 1
+2. The grammar is re-written as follow:
+d79 5
+a83 5
+<X>			-->		* <expr> | / <expr> | empty
+<T>			-->		<F> <Y>
+<Y>			-->		+ <T> | - <T> | empty
+<F>			-->		- <F> | <R>
+<R>			-->		(<expr>) | ID | Number   
+d94 2
+d97 13
+a109 5
+	- main.c validate input source file
+	- then calls scanner.c to scan for tokens, ended with EOFtk
+	- then calls parser.c to validate syntax based on grammar rules
+
+
+d112 1
+@

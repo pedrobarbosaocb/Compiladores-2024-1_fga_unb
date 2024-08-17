@@ -1,0 +1,1252 @@
+head	1.8;
+access;
+symbols;
+locks
+	lhn7c5:1.8; strict;
+comment	@ * @;
+
+
+1.8
+date	2014.11.13.01.44.32;	author lhn7c5;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	2014.11.12.21.40.51;	author lhn7c5;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	2014.11.12.20.04.36;	author lhn7c5;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	2014.11.12.18.28.29;	author lhn7c5;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2014.11.12.03.07.41;	author lhn7c5;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2014.11.10.04.48.34;	author lhn7c5;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2014.11.09.18.33.07;	author lhn7c5;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2014.11.08.20.06.41;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@Done parser.
+@
+
+
+1.8
+log
+@Final version to submit.
+@
+text
+@/*
+* CS4280 Fall 2014 - P2 
+* Author: Loc Nguyen
+* 
+* $Id: parser.c,v 1.7 2014/11/12 21:40:51 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/parser.c,v $
+* Last modified: 
+*       by $Author: lhn7c5 $
+*       on $Date: 2014/11/12 21:40:51 $
+* 
+* $Log: parser.c,v $
+* Revision 1.7  2014/11/12 21:40:51  lhn7c5
+* Add left and right parenthesis tokens to tree node R.
+*
+* Revision 1.6  2014/11/12 20:04:36  lhn7c5
+*  Parse tree with a linked-list of tokens per node.
+*
+* Revision 1.5  2014/11/12 18:28:29  lhn7c5
+* Begin build linked-list of tokens per tree node.
+*
+* Revision 1.4  2014/11/12 03:07:41  lhn7c5
+* Fix getNode() function: add child4.
+*
+* Revision 1.3  2014/11/10 04:48:34  lhn7c5
+* Done P2.
+*
+* Revision 1.2  2014/11/09 18:33:07  lhn7c5
+* Done parser and parse tree.
+*
+* Revision 1.1  2014/11/08 20:06:41  lhn7c5
+* Initial revision
+*
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "token.h"
+#include "scanner.h"
+#include "parser.h"
+
+Token tk = {"N/A", NAtk, 0}; 
+FILE *fP = NULL;
+
+Node * getNode(NodeType);
+void printParseTree(Node *, int);
+
+Node * program();
+void parser(FILE *filePtr) {
+	lineNum = 1; // reset line number
+	fP = filePtr;
+	rewind(fP);
+
+	tk = scanner(fP);
+	Node *root = NULL;
+
+	root = program();
+
+	if (tk.tokenType == EOFtk) 
+		printf("Parse OK! \n");
+	else { 
+		exit(1);
+	}
+	
+	printf("\n*-----Parse Tree-----*\n");
+	printParseTree(root, 0);
+	return;
+}
+
+void insertToken(Node *, Token);
+Node * var();
+Node * block();
+Node * program() {
+	Node *node = getNode(programNode);
+	node->child1 = var();
+	if (tk.tokenType == DOtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+	} else {
+		printf("ERROR: expect DOtk or VARtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+
+	node->child2 = block();
+	if (tk.tokenType == RETURNtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else {
+		printf("ERROR: expect RETURNtk, bu received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * mvars();
+Node * var() {
+	Node *node = getNode(varNode); 
+	if (tk.tokenType == VARtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			insertToken(node, tk);
+			//node->token = tk;
+			tk = scanner(fP);
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+		node->child1 = mvars();
+		if (tk.tokenType == DOTtk) {
+			//insertToken(node, tk);
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} 
+	else { 
+		return node; // predict <var> --> empty
+	}
+}
+
+Node * mvars() {
+	Node * node = getNode(mvarsNode);
+	if (tk.tokenType == COLONtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			insertToken(node, tk);
+			//node->token = tk;
+			tk = scanner(fP);
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+		node->child1 = mvars();
+		return node;
+	} else {
+		return node; // predict <mvars> --> empty
+	}
+}
+
+Node * stats();
+Node * block() {
+	Node *node = getNode(blockNode);
+	if (tk.tokenType == STARTtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		node->child1 = var();
+		node->child2 = stats();
+		if (tk.tokenType == FINISHtk) {
+			//insertToken(node, tk);
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect FINISHtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect STARTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * stat();
+Node * mStat();
+Node * stats() {
+	Node *node = getNode(statsNode);
+	node->child1 = stat();
+	node->child2 = mStat();
+	return node;
+}
+
+Node * in();
+Node * out();
+Node * loop();
+Node * ifTk();
+Node * assign();
+Node * stat() {
+	Node *node = getNode(statNode);
+	if (tk.tokenType == READtk) {
+		node->child1 = in();
+		return node;
+	} else if (tk.tokenType == PRINTtk) {
+		node->child1 = out();
+		return node;
+	} else if (tk.tokenType == STARTtk) {
+		node->child1 = block();
+		return node;
+	} else if (tk.tokenType == IFtk) {
+		node->child1 = ifTk();
+		return node;
+	} else if (tk.tokenType == REPEATtk) {
+		node->child1 = loop();
+		return node;
+	} else if (tk.tokenType == IDtk) {
+		node->child1 = assign(); 
+		return node;
+	} else {
+		printf("ERROR: expect either READtk, PRINTtk, STARTtk, Iftk, REPEATtk, or IDtk. ");
+		printf("But received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * mStat() {
+	Node *node = getNode(mStatNode);
+	if (tk.tokenType == READtk || tk.tokenType == PRINTtk || tk.tokenType == STARTtk 
+		|| tk.tokenType == IFtk || tk.tokenType == REPEATtk || tk.tokenType == IDtk) {
+		node->child1 = stat();
+		node->child2 = mStat();
+		return node;
+	} else {
+		return node; // predict <mStat> --> empty
+	}
+}
+
+Node * in() {
+	Node *node = getNode(inNode);
+	if (tk.tokenType == READtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			insertToken(node, tk);
+			//node->token = tk;
+			tk = scanner(fP);
+			if (tk.tokenType == DOTtk) {
+				//insertToken(node, tk);
+				tk = scanner(fP);
+				return node;
+			} else {
+				printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum); 
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect READtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * expr();
+Node * out() {
+	Node *node = getNode(outNode);
+	if (tk.tokenType == PRINTtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		node->child1 = expr();
+		if (tk.tokenType == DOTtk) {
+			//insertToken(node, tk);
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect PRINTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * t();
+Node * expr() {
+	Node *node = getNode(exprNode);
+	node->child1 = t();
+	if (tk.tokenType == MULtk) {
+		tk = scanner(fP);
+		node->child2 = expr();
+		return node;
+	} else if (tk.tokenType == DIVtk) {
+		tk = scanner(fP);
+		node->child2 = expr();
+		return node;
+	} else {
+		return node; // predict empty after <T>
+	}
+}
+
+Node * f();
+Node * t() {
+	Node *node = getNode(tNode);
+	node->child1 = f();
+	if (tk.tokenType == ADDtk) {
+		tk = scanner(fP);
+		node->child2 = t();
+		return node;
+	} else if (tk.tokenType == SUBTRACTtk) {
+		tk = scanner(fP);
+		node->child2 = t();
+		return node;
+	} else {
+		return node; // predict empty after <F>
+	}
+}
+
+Node * r();
+Node * f() {
+	Node *node = getNode(fNode);
+	if (tk.tokenType == SUBTRACTtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		node->child1 = f();
+		return node;
+	} else {
+		node->child1 = r();
+		return node;
+	}
+}
+
+Node * r() {
+	Node *node = getNode(rNode);
+	if (tk.tokenType == LEFTPAtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		node->child1 = expr();
+		if (tk.tokenType == RIGHTPAtk) {
+			insertToken(node, tk);
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect RIGHTPAtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else if (tk.tokenType == IDtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == NUMBERtk) {
+		insertToken(node, tk);
+		//node->token = tk;
+		tk = scanner(fP);
+		return node;
+	} else {
+		printf("ERROR: expect either LEFTPAtk, or IDtk, or NUMBERtk. ");
+		printf("But received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+/*------ for re-written grammar ------*/
+void y() {
+	if (tk.tokenType == ADDtk) {
+		tk = scanner(fP);
+		t();
+		return;
+	} else if (tk.tokenType == SUBTRACTtk) {
+		tk = scanner(fP);
+		t();
+		return;
+	} else { 
+		return; // predict <Y> --> empty	
+	}
+}
+
+void x() {
+	if (tk.tokenType == MULtk) {
+		tk = scanner(fP);
+		expr();
+		return;
+	} else if (tk.tokenType == DIVtk) {
+		tk = scanner(fP);
+		expr();
+		return;
+	} else {
+		return; // predict <X> --> empty
+	} 
+}
+/*------ /for re-written grammar ------*/
+
+Node * ro();
+Node * ifTk() {
+	Node *node = getNode(ifNode);
+	if (tk.tokenType == IFtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		if (tk.tokenType == LEFTBRACKETtk) {
+			tk = scanner(fP);
+			node->child1 = expr();
+			node->child2 = ro();
+			node->child3 = expr();
+			if (tk.tokenType == RIGHTBRACKETtk) {
+				tk = scanner(fP);
+				node->child4 = block();
+				return node;
+			} else {
+				printf("ERROR: expect RIGHTBRACKETtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect LEFTBRACKETtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect IFtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * ro() {
+	Node *node = getNode(roNode);
+	if (tk.tokenType == LESSEQtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == GREATEREQtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == EQUALtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == GREATERtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == LESStk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else if (tk.tokenType == DIFFtk) {
+		insertToken(node, tk);
+		tk = scanner(fP);
+		return node;
+	} else {
+		printf("ERROR: expect relational operator, but received %s on line #%d \n", 
+			tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * assign() {
+	Node *node = getNode(assignNode);
+	if (tk.tokenType == IDtk) {
+		insertToken(node, tk);
+		//node->token = tk;
+		tk = scanner(fP);
+		if (tk.tokenType == ASSIGNtk) {
+			//insertToken(node, tk);
+			tk = scanner(fP);
+			expr();
+			if (tk.tokenType == DOTtk) {
+				insertToken(node, tk);
+				tk = scanner(fP);
+				return node;
+			} else {
+				printf("ERROR: expect DOTtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect ASSIGNtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+
+Node * loop() {
+	Node *node = getNode(loopNode);
+	if (tk.tokenType == REPEATtk) {
+		//insertToken(node, tk);
+		tk = scanner(fP);
+		if (tk.tokenType == LEFTBRACKETtk) {
+			tk = scanner(fP);
+			node->child1 = expr();
+			node->child2 = ro();
+			node->child3 = expr();
+			if (tk.tokenType == RIGHTBRACKETtk) {
+				tk = scanner(fP);
+				node->child4 = block();
+				return node;
+			} else {
+				printf("ERROR: expect RIGHTBRACKETtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect LEFTBRACKETtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect REPEATtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+
+/*---------------TREE---------------*/
+
+// Hard-code to map with enum NodeType declared in parser.h 
+char *nodeTypeStrArr[] = {
+	"<program>", "<block>", "<var>", "<mvars>", "<expr>", "<x>", "<t>", "<y>", "<f>", "<r>", 
+	"<stats>", "<mStat>", "<stat>", "<in>", "<out>", "<if>", "<loop>", "<assign>", "<ro>"
+};
+
+// Hard-coded to map with enum TokenType declared in token.h
+char *tokenStrArr[] = {
+	"IDtk", 
+
+	"STARTtk", "FINISHtk", "THENtk", "IFtk", "REPEATtk", "VARtk", "INTtk", "FLOATtk", "DOtk",
+	"READtk", "PRINTtk", "VOIDtk", "RETURNtk", "DUMMYtk", "PROGRAMtk", 
+
+	"NUMBERtk",
+
+	"EQUALtk", "GREATERtk", "LESStk", "DIFFtk", "GREATEREQtk", "LESSEQtk", 
+
+	"ASSIGNtk", "COLONtk", "ADDtk", "SUBTRACTtk", "MULtk", "DIVtk", "REMAINDERtk", 
+
+	"DOTtk", "LEFTPAtk","RIGHTPAtk", "COMMAtk", "LEFTBRACEtk", "RIGHTBRACEtk", 
+	"SEMICOLONtk", "LEFTBRACKETtk", "RIGHTBRACKETtk", 
+
+	"NAtk", "EOFtk"
+};
+
+void printParseTree(Node *root, int level) {
+	if (root == NULL) return;
+	// printf("%*s" "%d %s ", level * 4, "", level, nodeTypeStrArr[root->nodeType]);
+	printf("%*s" "%s ", level * 4, "", nodeTypeStrArr[root->nodeType]);
+/*
+	if (root->token.tokenType != NAtk && root->token.tokenType != EOFtk) {
+		// printf(" Token on line #%d is %s", root->token.lineNum, root->token.str); 
+		printf(" [Token %s on line #%d]", root->token.str, root->token.lineNum); 
+	}
+*/
+	
+	Token *tmp = root->tokenPtr;
+	int isTokenFound = 0; // false
+	if (tmp != NULL) {
+		isTokenFound = 1;
+		printf("{Token(s) found: ");
+	}
+
+	while (tmp != NULL) {
+		int isLastToken = 0; // false
+		printf("%s (%s, #%d)", tmp->str, tokenStrArr[tmp->tokenType], tmp->lineNum);
+		tmp = tmp->next;
+		if (tmp == NULL) 
+			isLastToken = 1;
+		if (! isLastToken) {
+			printf(", and ");
+		}
+	}
+
+	if (isTokenFound) {
+		printf("}");
+	}
+
+	printf("\n");
+
+	printParseTree(root->child1, level + 1);
+	printParseTree(root->child2, level + 1);
+	printParseTree(root->child3, level + 1);
+	printParseTree(root->child4, level + 1);
+}
+
+// Mark the new node by its type
+Node *getNode(NodeType nodeType) {
+	Node *node;
+	node = (Node *) malloc(sizeof(Node));
+
+	node->nodeType = nodeType;
+
+	node->tokenPtr = NULL;
+	node->child1 = node->child2 = node->child3 = node->child4 = NULL;
+
+	return node;
+}
+
+Token *getTokenPtr(Token tk) {
+	Token *tokenPtr = (Token *) malloc(sizeof(Token));
+	strcpy(tokenPtr->str, tk.str);
+	tokenPtr->lineNum = tk.lineNum;
+	tokenPtr->tokenType = tk.tokenType;
+	return tokenPtr;
+}
+
+// Insert new token at the end of the linked-list of tokens 
+void insertToken(Node *node, Token tk) {
+	Token *new = getTokenPtr(tk);
+	if (node->tokenPtr == NULL) {
+		node->tokenPtr = new;
+	} else {
+		Token *tmp = node->tokenPtr;
+		while (tmp->next != NULL) {
+			tmp = tmp->next;
+		}
+		tmp->next = new;
+	}
+}
+
+/*---------------/TREE---------------*/
+
+@
+
+
+1.7
+log
+@Add left and right parenthesis tokens to tree node R.
+@
+text
+@d5 1
+a5 1
+* $Id: parser.c,v 1.6 2014/11/12 20:04:36 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/12 20:04:36 $
+d12 3
+d77 1
+a77 1
+		insertToken(node, tk);
+d86 1
+a86 1
+		insertToken(node, tk);
+d99 1
+a99 1
+		insertToken(node, tk);
+d111 1
+a111 1
+			insertToken(node, tk);
+d127 1
+a127 1
+		insertToken(node, tk);
+d148 1
+a148 1
+		insertToken(node, tk);
+d153 1
+a153 1
+			insertToken(node, tk);
+d222 1
+a222 1
+		insertToken(node, tk);
+d229 1
+a229 1
+				insertToken(node, tk);
+d250 1
+a250 1
+		insertToken(node, tk);
+d254 1
+a254 1
+			insertToken(node, tk);
+d379 1
+a379 1
+		insertToken(node, tk);
+d446 1
+a446 1
+			insertToken(node, tk);
+d473 1
+a473 1
+		insertToken(node, tk);
+d511 4
+a514 1
+	"id", 
+d516 1
+a516 2
+	"start", "finish", "then", "if", "repeat", "var", "int", "float", "do",
+	"read", "print", "void", "return", "dummy", "program", 
+d518 1
+a518 1
+	"number",
+d520 1
+a520 1
+	"==", "<", ">", "=!=", "=>", "=<", 
+d522 2
+a523 1
+	"=", ":", "+", "-", "*", "/", "%", 
+d525 1
+a525 1
+	".", "(", ")", ",", "{", "}", ";", "[", "]"
+d530 2
+a531 1
+	printf("%*s" "%d %s ", level * 4, "", level, nodeTypeStrArr[root->nodeType]);
+d548 1
+a548 1
+		printf("%s (line #%d)", tmp->str, tmp->lineNum);
+@
+
+
+1.6
+log
+@ Parse tree with a linked-list of tokens per node.
+@
+text
+@d5 1
+a5 1
+* $Id: parser.c,v 1.5 2014/11/12 18:28:29 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/12 18:28:29 $
+d12 3
+d315 1
+d319 1
+@
+
+
+1.5
+log
+@Begin build linked-list of tokens per tree node.
+@
+text
+@d5 1
+a5 1
+* $Id: parser.c,v 1.4 2014/11/12 03:07:41 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/12 03:07:41 $
+d12 3
+a35 1
+//Token *tk = (Token *) malloc(sizeof(Token));
+d64 1
+d71 1
+d80 1
+d93 1
+d96 1
+d105 1
+d121 1
+d124 1
+d142 1
+d147 1
+d216 1
+d219 1
+d223 1
+d244 1
+d248 1
+d299 1
+d322 1
+d326 1
+d371 1
+d401 1
+a401 1
+		
+d405 1
+d409 1
+d413 1
+d417 1
+d421 1
+d434 1
+d438 1
+d442 1
+d465 1
+d526 7
+d534 10
+d545 3
+a547 1
+
+d563 2
+a564 1
+	//node->token.tokenType = NAtk;
+d570 22
+@
+
+
+1.4
+log
+@Fix getNode() function: add child4.
+@
+text
+@d5 1
+a5 1
+* $Id: parser.c,v 1.3 2014/11/10 04:48:34 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/10 04:48:34 $
+d12 3
+d90 1
+a90 1
+			node->token = tk;
+d115 1
+a115 1
+			node->token = tk;
+d206 1
+a206 1
+			node->token = tk;
+d307 1
+a307 1
+		node->token = tk;
+d408 1
+a408 1
+		node->token = tk;
+d490 1
+a490 1
+
+d495 5
+d514 1
+a514 1
+	node->token.tokenType = NAtk;
+@
+
+
+1.3
+log
+@Done P2.
+@
+text
+@d5 2
+a6 2
+* $Id: parser.c,v 1.2 2014/11/09 18:33:07 lhn7c5 Exp lhn7c5 $
+* $Source: /studentslq/l/lhn7c5/4280/P2/RCS/parser.c,v $
+d9 1
+a9 1
+*       on $Date: 2014/11/09 18:33:07 $
+d12 3
+d507 1
+a507 1
+	node->child1 = node->child2 = node->child3 = NULL;
+@
+
+
+1.2
+log
+@Done parser and parse tree.
+@
+text
+@d5 2
+a6 2
+* $Id: parser.c,v 1.1 2014/11/08 20:06:41 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/parser.c,v $
+d9 1
+a9 1
+*       on $Date: 2014/11/08 20:06:41 $
+d12 3
+d301 1
+d311 1
+d339 1
+d402 1
+d457 1
+a457 1
+/*-------------TREE---------------*/
+d459 1
+d486 2
+a487 1
+		printf(" Token on line #%d is %s", root->token.lineNum, root->token.str); 
+d494 1
+d509 1
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d5 2
+a6 2
+* $Id$
+* $Source$
+d8 2
+a9 2
+*       by $Author$
+*       on $Date$
+d11 4
+a14 1
+* $Log$
+d25 1
+a25 1
+Token tk = {"N/A", NAtk, 0}; // extern var
+d28 2
+d31 1
+d36 1
+d38 1
+d40 1
+a40 2
+	//printf("STR = %s on line #%d \n", tk.str, tk.lineNum);
+	//printf("STR[1] = %s #%d \n", tokens[1].str, tokens[1].lineNum);
+d42 4
+a45 7
+/*	
+	tk = scanner(fP);
+	printf("STR = %s on line #%d \n", tk.str, tk.lineNum);
+	if (tk.tokenType == IDtk) {
+		printf("IDtk found \n");
+	} else {
+		printf("NOT found IDtk \n");
+d47 4
+a50 8
+*/
+	program();
+
+	if (tk.tokenType == EOFtk) 
+		printf("Parse OK \n");
+	else 
+		printf("Error \n");
+
+d53 5
+a57 4
+void var();
+void block();
+void program() {
+	var();
+d61 1
+a61 1
+		printf("ERROR: expect DOtk on line #%d \n", tk.lineNum);
+d64 2
+a65 1
+	block();
+d68 1
+a68 1
+		return;
+d70 1
+a70 1
+		printf("ERROR: expect RETURNtk on line #%d \n", tk.lineNum);
+d75 3
+a77 2
+void mvars();
+void var() {
+d81 1
+d84 1
+a84 1
+			printf("ERROR: expect IDtk on line #%d \n", tk.lineNum);
+d87 1
+a87 1
+		mvars();
+d90 1
+a90 1
+			return;
+d92 1
+a92 1
+			printf("ERROR: expect DOTtk on line #%d \n", tk.lineNum);
+d97 1
+a97 1
+		return; // predict <var> --> empty
+d101 2
+a102 1
+void mvars() {
+d106 1
+d109 1
+a109 1
+			printf("ERROR: expect IDtk \n");
+d112 2
+a113 2
+		mvars();
+		return;
+d115 1
+a115 1
+		return; // predict <mvars> --> empty
+d119 3
+a121 2
+void stats();
+void block() {
+d124 2
+a125 2
+		var();
+		stats();
+d128 1
+a128 1
+			return;
+d130 1
+a130 1
+			printf("ERROR: expect FINISHtk \n");
+d134 1
+a134 1
+		printf("ERROR: expect STARTtk \n");
+d139 7
+a145 6
+void stat();
+void mStat();
+void stats() {
+	stat();
+	mStat();
+	return;
+d148 7
+a154 6
+void in();
+void out();
+void loop();
+void ifTk();
+void assign();
+void stat() {
+d156 2
+a157 2
+		in();
+		return;
+d159 2
+a160 2
+		out();
+		return;
+d162 2
+a163 2
+		block();
+		return;
+d165 2
+a166 2
+		ifTk();
+		return;
+d168 2
+a169 2
+		loop();
+		return;
+d171 2
+a172 2
+		assign(); 
+		return;
+d174 2
+a175 1
+		printf("ERROR: expect either PRINTtk, STARTtk, Iftk, REPEATtk, or IDtk \n"); 
+d180 2
+a181 1
+void mStat() {
+d184 3
+a186 3
+		stat();
+		mStat();
+		return;
+d188 1
+a188 1
+		return; // predict <mStat> --> empty
+d192 2
+a193 1
+void in() {
+d197 1
+d201 1
+a201 1
+				return;
+d203 1
+a203 1
+				printf("ERROR: expect DOTtk \n");
+d207 1
+a207 1
+			printf("ERROR: expect IDtk \n"); 
+d211 1
+a211 1
+		printf("ERROR: expect READtk \n");
+d216 3
+a218 2
+void expr();
+void out() {
+d221 1
+a221 1
+		expr();
+d224 1
+a224 1
+			return;
+d226 1
+a226 1
+			printf("ERROR: expect DOTtk \n");
+d230 1
+a230 1
+		printf("ERROR: expect PRINTtk \n");
+d235 15
+a249 6
+void t();
+void x();
+void expr() {
+	t();
+	x();
+	return;
+d252 15
+a266 6
+void f();
+void y();
+void t() {
+	f();
+	y();
+	return;
+d269 3
+a271 2
+void r();
+void f() {
+d274 2
+a275 2
+		f();
+		return;
+d277 2
+a278 2
+		r();
+		return;
+d282 2
+a283 1
+void r() {
+d286 1
+a286 1
+		expr();
+d289 1
+a289 1
+			return;
+d291 1
+a291 1
+			printf("ERROR: expect RIGHTPAtk \n");
+d296 1
+a296 1
+		return;
+d299 1
+a299 1
+		return;
+d301 2
+a302 1
+		printf("ERROR: expect either LEFTPAtk, or IDtk, or NUMBERtk \n");
+d335 3
+a337 2
+void ro();
+void ifTk() {
+d342 3
+a344 3
+			expr();
+			ro();
+			expr();
+d347 2
+a348 2
+				block();
+				return;
+d350 2
+a351 1
+				printf("ERROR: expect RIGHTBRACKETtk \n");
+d355 2
+a356 1
+			printf("ERROR: expect LEFTBRACKETtk \n");
+d360 1
+a360 1
+		printf("ERROR: expect IFtk \n");
+d365 2
+a366 1
+void ro() {
+d368 1
+d370 1
+a370 1
+		return;
+d373 1
+a373 1
+		return;
+d376 1
+a376 1
+		return;
+d379 1
+a379 1
+		return;
+d382 1
+a382 1
+		return;
+d385 1
+a385 1
+		return;
+d387 2
+a388 1
+		printf("ERROR: expect relational token on line #%d \n", tk.lineNum);
+d393 2
+a394 1
+void assign() {
+d402 1
+a402 1
+				return;
+d404 2
+a405 1
+				printf("ERROR: expect DOTtk \n");
+d409 2
+a410 1
+			printf("ERROR: expect ASSIGNtk \n");
+d414 1
+a414 1
+		printf("ERROR: expect IDtk \n");
+d420 2
+a421 1
+void loop() {
+d426 3
+a428 3
+			expr();
+			ro();
+			expr();
+d431 2
+a432 2
+				block();
+				return;
+d434 2
+a435 1
+				printf("ERROR: expect RIGHTBRACKETtk \n");
+d439 2
+a440 1
+			printf("ERROR: expect LEFTBRACKETtk on line #%d \n", tk.lineNum);
+d444 1
+a444 1
+		printf("ERROR: expect REPEATtk \n");
+d449 36
+a484 3
+void testParser() {
+	printf("In parser \n");
+	testScanner();
+d487 4
+d492 3
+d496 2
+a497 1
+
+@

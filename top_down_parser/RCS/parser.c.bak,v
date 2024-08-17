@@ -1,0 +1,494 @@
+head	1.1;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.1
+date	2014.11.10.04.49.01;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@This is the back-up verson. Done parser. Parse tree not implemented in this.
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@/*
+* CS4280 Fall 2014 - P2 
+* Author: Loc Nguyen
+* 
+* $Id: parser.c,v 1.1 2014/11/08 20:06:41 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/parser.c,v $
+* Last modified: 
+*       by $Author: lhn7c5 $
+*       on $Date: 2014/11/08 20:06:41 $
+* 
+* $Log: parser.c,v $
+* Revision 1.1  2014/11/08 20:06:41  lhn7c5
+* Initial revision
+*
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "token.h"
+#include "scanner.h"
+#include "parser.h"
+
+//Token *tk = (Token *) malloc(sizeof(Token));
+Token tk = {"N/A", NAtk, 0}; 
+FILE *fP = NULL;
+
+Node * getNode(NodeType);
+void printParseTree(Node *, int);
+
+Node * program();
+void parser(FILE *filePtr) {
+	lineNum = 1; // reset line number
+	fP = filePtr;
+	rewind(fP);
+
+	tk = scanner(fP);
+	Node *root = NULL;
+
+	root = program();
+
+	if (tk.tokenType == EOFtk) 
+		printf("Parse OK! \n");
+	else { 
+		exit(1);
+	}
+	
+	printf("\n*-----Parse Tree-----*\n");
+	printParseTree(root, 0);
+	return;
+}
+
+Node * var();
+Node * block();
+Node * program() {
+	Node *node = getNode(programNode);
+	node->child1 = var();
+	if (tk.tokenType == DOtk) {
+		tk = scanner(fP);
+	} else {
+		printf("ERROR: expect DOtk or VARtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+
+	node->child2 = block();
+	if (tk.tokenType == RETURNtk) {
+		tk = scanner(fP);
+		return node;
+	} else {
+		printf("ERROR: expect RETURNtk, bu received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * mvars();
+Node * var() {
+	Node *node = getNode(varNode); 
+	if (tk.tokenType == VARtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			node->token = tk;
+			tk = scanner(fP);
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+		node->child1 = mvars();
+		if (tk.tokenType == DOTtk) {
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} 
+	else { 
+		return node; // predict <var> --> empty
+	}
+}
+
+Node * mvars() {
+	Node * node = getNode(mvarsNode);
+	if (tk.tokenType == COLONtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			tk = scanner(fP);
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+		node->child1 = mvars();
+		return node;
+	} else {
+		return node; // predict <mvars> --> empty
+	}
+}
+
+Node * stats();
+Node * block() {
+	Node *node = getNode(blockNode);
+	if (tk.tokenType == STARTtk) {
+		tk = scanner(fP);
+		node->child1 = var();
+		node->child2 = stats();
+		if (tk.tokenType == FINISHtk) {
+			tk = scanner(fP);
+			return node;
+		} else {
+			printf("ERROR: expect FINISHtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect STARTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * stat();
+Node * mStat();
+Node * stats() {
+	Node *node = getNode(statsNode);
+	node->child1 = stat();
+	node->child2 = mStat();
+	return node;
+}
+
+void in();
+void out();
+void loop();
+void ifTk();
+void assign();
+Node* stat() {
+	Node *node = getNode(statNode);
+	if (tk.tokenType == READtk) {
+		in();
+		return node;
+	} else if (tk.tokenType == PRINTtk) {
+		out();
+		return node;
+	} else if (tk.tokenType == STARTtk) {
+		block();
+		return node;
+	} else if (tk.tokenType == IFtk) {
+		ifTk();
+		return node;
+	} else if (tk.tokenType == REPEATtk) {
+		loop();
+		return node;
+	} else if (tk.tokenType == IDtk) {
+		assign(); 
+		return node;
+	} else {
+		printf("ERROR: expect either READtk, PRINTtk, STARTtk, Iftk, REPEATtk, or IDtk. ");
+		printf("But received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+Node * mStat() {
+	Node *node = getNode(mStatNode);
+	if (tk.tokenType == READtk || tk.tokenType == PRINTtk || tk.tokenType == STARTtk 
+		|| tk.tokenType == IFtk || tk.tokenType == REPEATtk || tk.tokenType == IDtk) {
+		node->child1 = stat();
+		node->child2 = mStat();
+		return node;
+	} else {
+		return node; // predict <mStat> --> empty
+	}
+}
+
+void in() {
+	if (tk.tokenType == READtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == IDtk) {
+			tk = scanner(fP);
+			if (tk.tokenType == DOTtk) {
+				tk = scanner(fP);
+				return;
+			} else {
+				printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum); 
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect READtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+void expr();
+void out() {
+	if (tk.tokenType == PRINTtk) {
+		tk = scanner(fP);
+		expr();
+		if (tk.tokenType == DOTtk) {
+			tk = scanner(fP);
+			return;
+		} else {
+			printf("ERROR: expect DOTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect PRINTtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+void t();
+void x();
+void expr() {
+	t();
+	x();
+	return;
+}
+
+void f();
+void y();
+void t() {
+	f();
+	y();
+	return;
+}
+
+void r();
+void f() {
+	if (tk.tokenType == SUBTRACTtk) {
+		tk = scanner(fP);
+		f();
+		return;
+	} else {
+		r();
+		return;
+	}
+}
+
+void r() {
+	if (tk.tokenType == LEFTPAtk) {
+		tk = scanner(fP);
+		expr();
+		if (tk.tokenType == RIGHTPAtk) {
+			tk = scanner(fP);
+			return;
+		} else {
+			printf("ERROR: expect RIGHTPAtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else if (tk.tokenType == IDtk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == NUMBERtk) {
+		tk = scanner(fP);
+		return;
+	} else {
+		printf("ERROR: expect either LEFTPAtk, or IDtk, or NUMBERtk. ");
+		printf("But received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+void y() {
+	if (tk.tokenType == ADDtk) {
+		tk = scanner(fP);
+		t();
+		return;
+	} else if (tk.tokenType == SUBTRACTtk) {
+		tk = scanner(fP);
+		t();
+		return;
+	} else { 
+		return; // predict <Y> --> empty	
+	}
+}
+
+void x() {
+	if (tk.tokenType == MULtk) {
+		tk = scanner(fP);
+		expr();
+		return;
+	} else if (tk.tokenType == DIVtk) {
+		tk = scanner(fP);
+		expr();
+		return;
+	} else {
+		return; // predict <X> --> empty
+	} 
+}
+
+void ro();
+void ifTk() {
+	if (tk.tokenType == IFtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == LEFTBRACKETtk) {
+			tk = scanner(fP);
+			expr();
+			ro();
+			expr();
+			if (tk.tokenType == RIGHTBRACKETtk) {
+				tk = scanner(fP);
+				block();
+				return;
+			} else {
+				printf("ERROR: expect RIGHTBRACKETtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect LEFTBRACKETtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect IFtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+void ro() {
+	if (tk.tokenType == LESSEQtk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == GREATEREQtk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == EQUALtk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == GREATERtk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == LESStk) {
+		tk = scanner(fP);
+		return;
+	} else if (tk.tokenType == DIFFtk) {
+		tk = scanner(fP);
+		return;
+	} else {
+		printf("ERROR: expect relational operator, but received %s on line #%d \n", 
+			tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+void assign() {
+	if (tk.tokenType == IDtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == ASSIGNtk) {
+			tk = scanner(fP);
+			expr();
+			if (tk.tokenType == DOTtk) {
+				tk = scanner(fP);
+				return;
+			} else {
+				printf("ERROR: expect DOTtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect ASSIGNtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect IDtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+
+void loop() {
+	if (tk.tokenType == REPEATtk) {
+		tk = scanner(fP);
+		if (tk.tokenType == LEFTBRACKETtk) {
+			tk = scanner(fP);
+			expr();
+			ro();
+			expr();
+			if (tk.tokenType == RIGHTBRACKETtk) {
+				tk = scanner(fP);
+				block();
+				return;
+			} else {
+				printf("ERROR: expect RIGHTBRACKETtk, but received %s on line #%d \n", 
+					tk.str, tk.lineNum);
+				exit(1);
+			}
+		} else {
+			printf("ERROR: expect LEFTBRACKETtk, but received %s on line #%d \n", 
+				tk.str, tk.lineNum);
+			exit(1);
+		}
+	} else {
+		printf("ERROR: expect REPEATtk, but received %s on line #%d \n", tk.str, tk.lineNum);
+		exit(1);
+	}
+}
+
+
+/*-------------TREE---------------*/
+
+char *nodeTypeStrArr[] = {
+	"<program>", "<block>", "<var>", "<mvars>", "<expr>", "<x>", "<t>", "<y>", "<f>", "<r>", 
+	"<stats>", "<mStat>", "<stat>", "<in>", "<out>", "<if>", "<loop>", "<assign>", "<ro>"
+};
+
+// Hard-coded to map with enum TokenType declared in token.h
+char *tokenStrArr[] = {
+	"id", 
+
+	"start", "finish", "then", "if", "repeat", "var", "int", "float", "do",
+	"read", "print", "void", "return", "dummy", "program", 
+
+	"number",
+
+	"==", "<", ">", "=!=", "=>", "=<", 
+
+	"=", ":", "+", "-", "*", "/", "%", 
+
+	".", "(", ")", ",", "{", "}", ";", "[", "]"
+};
+
+void printParseTree(Node *root, int level) {
+	if (root == NULL) return;
+	printf("%*s" "%d %s ", level * 4, "", level, nodeTypeStrArr[root->nodeType]);
+
+	if (root->token.tokenType != NAtk && root->token.tokenType != EOFtk) {
+		printf(" Token on line #%d is %s", root->token.lineNum, root->token.str); 
+	}
+	printf("\n");
+
+	printParseTree(root->child1, level + 1);
+	printParseTree(root->child2, level + 1);
+	printParseTree(root->child3, level + 1);
+}
+
+// Mark the new node by its type
+Node *getNode(NodeType nodeType) {
+	Node *node;
+	node = (Node *) malloc(sizeof(Node));
+
+	node->nodeType = nodeType;
+	node->token.tokenType = NAtk;
+	node->child1 = node->child2 = node->child3 = NULL;
+
+	return node;
+}
+
+
+@

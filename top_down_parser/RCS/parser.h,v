@@ -1,0 +1,161 @@
+head	1.4;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.4
+date	2014.11.12.20.05.26;	author lhn7c5;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2014.11.10.04.50.20;	author lhn7c5;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2014.11.09.18.32.47;	author lhn7c5;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2014.11.08.20.05.42;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@Done parser.
+@
+
+
+1.4
+log
+@ Parse tree with a linked-list of tokens per node.
+@
+text
+@/*
+* CS4280 Fall 2014 - P2 
+* Author: Loc Nguyen
+* 
+* $Id: parser.h,v 1.3 2014/11/10 04:50:20 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/parser.h,v $
+* Last modified: 
+*       by $Author: lhn7c5 $
+*       on $Date: 2014/11/10 04:50:20 $
+* 
+* $Log: parser.h,v $
+* Revision 1.3  2014/11/10 04:50:20  lhn7c5
+* Done P2.
+*
+* Revision 1.2  2014/11/09 18:32:47  lhn7c5
+* Done parser and parse tree.
+*
+* Revision 1.1  2014/11/08 20:05:42  lhn7c5
+* Initial revision
+*
+*/
+
+#ifndef PARSER_H 
+#define PARSER_H 
+
+void parser(FILE *);
+
+
+/*------- TREE -------*/
+// Represent non-terminal token nodes
+typedef enum {
+	programNode, blockNode, varNode, mvarsNode, exprNode, xNode, 
+	tNode, yNode, fNode, rNode, statsNode, mStatNode, statNode, 
+	inNode, outNode, ifNode, loopNode, assignNode, roNode
+} NodeType;
+
+struct nodeTag {
+	NodeType nodeType;
+	Token *tokenPtr; // linked-list of tokens of this node 
+	struct nodeTag *child1; // usually only up to 3 children needed 
+	struct nodeTag *child2;
+	struct nodeTag *child3;
+	struct nodeTag *child4; // but for <if> and <loop>, 4 children needed
+};
+typedef struct nodeTag Node;
+
+
+#endif
+@
+
+
+1.3
+log
+@Done P2.
+@
+text
+@d5 2
+a6 2
+* $Id: parser.h,v 1.2 2014/11/09 18:32:47 lhn7c5 Exp lhn7c5 $
+* $Source: /studentslq/l/lhn7c5/4280/P2/RCS/parser.h,v $
+d9 1
+a9 1
+*       on $Date: 2014/11/09 18:32:47 $
+d12 3
+d39 1
+a39 1
+	Token token; // allocated for one selected token of a node (might have more than 1)
+a47 12
+
+
+
+
+
+
+
+
+
+
+
+
+@
+
+
+1.2
+log
+@Done parser and parse tree.
+@
+text
+@d5 1
+a5 1
+* $Id: parser.h,v 1.1 2014/11/08 20:05:42 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/08 20:05:42 $
+d12 3
+d36 1
+a36 1
+	Token token; // allocated only when needed 
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d5 2
+a6 2
+* $Id$
+* $Source$
+d8 2
+a9 2
+*       by $Author$
+*       on $Date$
+d11 4
+a14 1
+* $Log$
+a20 1
+void program();
+d22 31
+a52 1
+void testParser();
+@

@@ -1,0 +1,123 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.2
+date	2014.11.07.07.38.46;	author lhn7c5;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2014.11.07.06.36.51;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@First set-up from P1 with modification.
+@
+
+
+1.2
+log
+@Done scanner.
+@
+text
+@/*
+* CS4280 Fall 2014 - P2 
+* Author: Loc Nguyen
+* 
+* $Id: symdef.h,v 1.1 2014/11/07 06:36:51 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/symdef.h,v $
+* Last modified: 
+*       by $Author: lhn7c5 $
+*       on $Date: 2014/11/07 06:36:51 $
+* 
+* $Log: symdef.h,v $
+* Revision 1.1  2014/11/07 06:36:51  lhn7c5
+* Initial revision
+*
+*/
+
+#ifndef SYMDEF_H 
+#define SYMDEF_H 
+
+char *keywords[15] = {"start", "finish", "then", "if", "repeat", "var", 
+	"int", "float", "do",
+	"read", "print", "void", "return", "dummy", "program"};	
+
+char *relationalOperators[] = {"==", "<", ">", "=!=", "=>", "=<"};
+
+// char *otherOperators[] = {":", "+", "-", "*", "/", "%"};
+char otherOperators[6] = {':', '+', '-', '*', '/', '%'};
+
+// char *delimiters[9] = {".", "(", ")", ",", "{", "}", ";", "[", "]"};
+char delimiters[9] = {'.', '(', ')', ',', '{', '}', ';', '[', ']'};
+
+char word[MAX];
+int wi = 0; // index of word string
+
+char numStr[MAX];
+int ni = 0;
+
+
+
+
+
+#endif
+
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d5 2
+a6 2
+* $Id$
+* $Source$
+d8 2
+a9 2
+*       by $Author$
+*       on $Date$
+d11 4
+a14 1
+* $Log$
+d39 2
+a40 29
+/*
+char words[LIMIT][MAX]; // include identifiers, and keywords
+int wordi = 0, wordj = 0;
+int wordLineNums[LIMIT];
+
+char keys[LIMIT][MAX]; // to store keywords
+int keyi = 0;
+int keyLineNums[LIMIT];
+   
+char idens[LIMIT][MAX]; // to store identifiers
+int ideni = 0;
+int idenLineNums[LIMIT];
+
+char nums[LIMIT][MAX];  // to store numbers
+int numi = 0, numj = 0;
+int numLineNums[LIMIT];
+
+char delims[LIMIT]; // to store delimiters
+int delimi = 0;
+int delimLineNums[LIMIT];
+
+char otherOps[LIMIT]; // to store other operators
+int otherOpi = 0;
+int otherOpLineNums[LIMIT];
+
+char relOps[LIMIT][MAX]; // to store keywords
+int relOpi = 0, relOpj = 0;
+int relOpLineNums[LIMIT];
+*/
+@

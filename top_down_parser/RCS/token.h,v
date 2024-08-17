@@ -1,0 +1,231 @@
+head	1.5;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.5
+date	2014.11.12.20.05.39;	author lhn7c5;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2014.11.10.04.50.58;	author lhn7c5;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2014.11.08.20.03.56;	author lhn7c5;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2014.11.07.07.37.16;	author lhn7c5;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2014.11.06.21.54.38;	author lhn7c5;	state Exp;
+branches;
+next	;
+
+
+desc
+@First set-up.
+@
+
+
+1.5
+log
+@ Parse tree with a linked-list of tokens per node.
+@
+text
+@/*
+* CS4280 Fall 2014 - P2 
+* Author: Loc Nguyen
+* 
+* $Id: token.h,v 1.4 2014/11/10 04:50:58 lhn7c5 Exp lhn7c5 $
+* $Source: /studentslq/l/lhn7c5/4280/P2/RCS/token.h,v $
+* Last modified: 
+*       by $Author: lhn7c5 $
+*       on $Date: 2014/11/10 04:50:58 $
+* 
+* $Log: token.h,v $
+* Revision 1.4  2014/11/10 04:50:58  lhn7c5
+* Done P2.
+*
+* Revision 1.3  2014/11/08 20:03:56  lhn7c5
+* Done parser.
+*
+* Revision 1.2  2014/11/07 07:37:16  lhn7c5
+* Done scanner.
+*
+* Revision 1.1  2014/11/06 21:54:38  lhn7c5
+* Initial revision
+*
+*/
+
+#ifndef TOKEN_H 
+#define TOKEN_H 
+
+#define MAX 9 // max length of each word string, not including '\0'
+#define LIMIT 200 // max number of word strings in an input file
+
+extern int lineNum;
+
+typedef enum {
+	// Identifier: begin with a letter, and continue with any number
+	// of letters. No ID is longer than MAX
+	IDtk, 
+
+	// Keywords (start finish then if repeat var int float do 
+	// read print void return dummy program) 
+	STARTtk, FINISHtk, THENtk, IFtk, REPEATtk, VARtk, INTtk, FLOATtk, 
+	DOtk, READtk, PRINTtk, VOIDtk, RETURNtk, DUMMYtk, PROGRAMtk, 
+
+	// Number: sequence of decimal digits, no sign, no longer than MAX digits
+	NUMBERtk, 
+
+	// Relational Operators (==  <  >  =!=    =>  =<)
+	EQUALtk, GREATERtk, LESStk, DIFFtk, GREATEREQtk, LESSEQtk, 
+
+	// Other operators (= :  +  -  *  / %)
+	ASSIGNtk, COLONtk, ADDtk, SUBTRACTtk, MULtk, DIVtk, REMAINDERtk,
+
+	// Delimiters (. (  ) , { } ; [ ])
+	DOTtk, LEFTPAtk, RIGHTPAtk, COMMAtk, LEFTBRACEtk, RIGHTBRACEtk, 
+	SEMICOLONtk, LEFTBRACKETtk, RIGHTBRACKETtk, 
+
+	NAtk, // N/A token 
+	EOFtk
+
+} TokenType;
+
+
+struct tokenTag {
+	char str[MAX];
+	TokenType tokenType;
+	int lineNum;
+
+	struct tokenTag *next; // linked-list, used for parse tree
+};
+typedef struct tokenTag Token;
+
+extern int numToken;
+extern Token *tokens; // list of all tokens (array of numToken) 
+
+
+#endif
+@
+
+
+1.4
+log
+@Done P2.
+@
+text
+@d5 1
+a5 1
+* $Id: token.h,v 1.3 2014/11/08 20:03:56 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/08 20:03:56 $
+d12 3
+a31 1
+extern int numToken;
+d63 1
+a63 1
+typedef struct {
+a66 11
+} Token;
+
+extern Token *tokens; // list of all tokens 
+
+
+
+
+
+
+
+
+d68 3
+d72 2
+@
+
+
+1.3
+log
+@Done parser.
+@
+text
+@d5 2
+a6 2
+* $Id: token.h,v 1.2 2014/11/07 07:37:16 lhn7c5 Exp lhn7c5 $
+* $Source: /accounts/students/l/lhn7c5/4280/P2/RCS/token.h,v $
+d9 1
+a9 1
+*       on $Date: 2014/11/07 07:37:16 $
+d12 3
+d69 10
+a78 1
+extern Token tk; // for parser
+@
+
+
+1.2
+log
+@Done scanner.
+@
+text
+@d5 1
+a5 1
+* $Id: token.h,v 1.1 2014/11/06 21:54:38 lhn7c5 Exp lhn7c5 $
+d9 1
+a9 1
+*       on $Date: 2014/11/06 21:54:38 $
+d12 3
+d49 2
+a50 2
+	DOTtk, LEFTPAtk, RIGHPAtk, COMMAtk, LEFTBRACEtk, RIGHTBRACEtk, 
+	LEFTBRACKETtk, RIGHTBRACKETtk, SEMICOLONtk,
+d52 1
+d66 1
+a66 1
+
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d5 2
+a6 2
+* $Id$
+* $Source$
+d8 2
+a9 2
+*       by $Author$
+*       on $Date$
+d11 4
+a14 1
+* $Log$
+d20 1
+a20 1
+#define MAX 8 // max length of each word string
+d23 3
+d51 1
+a51 2
+} TokenID;
+
+d56 1
+a56 1
+	TokenID tokenId;
+d60 1
+a60 3
+
+
+
+@

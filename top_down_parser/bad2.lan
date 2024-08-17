@@ -1,0 +1,17 @@
+// another bad # $ @
+// line 6: expect var, but received do
+var x : y .
+do
+  	start
+	  	do x .
+		print 2 - x .
+	  	start
+			var x .
+			print 1 .
+		finish
+	  	repeat [ x == 0]
+		start
+			print  2.
+		finish
+	finish 
+return

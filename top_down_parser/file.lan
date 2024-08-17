@@ -1,0 +1,7 @@
+// first keywords separated by spaces then by delimiters then by operators
+start finish then if repeat var int float do read print void return dummy program
+start.finish(then)if,repeat{var}int;float[do]start==finish<then>if=!=repeat=>var<=int=float:do!read+print-void*return/dummy%program
+
+// now some identifiers and numbers separated by operators or delimiters or WS
+
+x.xyz abc123 abc 123 -123
