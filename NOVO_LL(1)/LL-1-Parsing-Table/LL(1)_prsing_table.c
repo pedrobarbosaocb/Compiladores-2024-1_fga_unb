@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<ctype.h>
 #include<string.h>
+#include<stdlib.h>
 
 void followfirst(char , int , int);
 void findfirst(char , int , int);
