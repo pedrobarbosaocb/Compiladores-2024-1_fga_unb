@@ -124,9 +124,7 @@ AST *parse_primary(const char **expr) {
   return NULL;
 }
 
-// Function to parse multiplication and addition
-AST *parse_expression(const char **expr);
-
+// Function to parse multiplication
 AST *parse_mul(const char **expr) {
   AST *left = parse_primary(expr);
   
@@ -134,13 +132,14 @@ AST *parse_mul(const char **expr) {
   
   if (**expr == '*') {
     (*expr)++;
-    AST *right = parse_expression(expr);
+    AST *right = parse_mul(expr); // Recursive call to parse_mul
     return AST_NEW(AST_MUL, left, right);
   }
   
   return left;
 }
 
+// Function to parse addition
 AST *parse_expression(const char **expr) {
   AST *left = parse_mul(expr);
   
@@ -148,7 +147,7 @@ AST *parse_expression(const char **expr) {
   
   if (**expr == '+') {
     (*expr)++;
-    AST *right = parse_expression(expr);
+    AST *right = parse_expression(expr); // Recursive call to parse_expression
     return AST_NEW(AST_ADD, left, right);
   }
   
