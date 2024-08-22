@@ -12,6 +12,7 @@ struct AST {
     AST_LETTER,
     AST_ADD,
     AST_MUL,
+    AST_DIV,  // Adicionando a tag para a divisão
   } tag;
   union {
     struct AST_MAIN { AST *body; } AST_MAIN;
@@ -19,6 +20,7 @@ struct AST {
     struct AST_LETTER { char letter; } AST_LETTER;
     struct AST_ADD { AST *left; AST *right; } AST_ADD;
     struct AST_MUL { AST *left; AST *right; } AST_MUL;
+    struct AST_DIV { AST *left; AST *right; } AST_DIV;  // Adicionando o campo para divisão
   } data;
 };
 
@@ -52,6 +54,12 @@ void ast_free(AST *ptr) {
     }
     case AST_MUL: {
       struct AST_MUL data = ast.data.AST_MUL;
+      ast_free(data.left);
+      ast_free(data.right);
+      break;
+    }
+    case AST_DIV: {
+      struct AST_DIV data = ast.data.AST_DIV;
       ast_free(data.left);
       ast_free(data.right);
       break;
@@ -99,6 +107,13 @@ void ast_print_tree(AST *ptr, int depth) {
       ast_print_tree(data.right, depth + 1);
       break;
     }
+    case AST_DIV: {
+      printf("DIV\n");
+      struct AST_DIV data = ast.data.AST_DIV;
+      ast_print_tree(data.left, depth + 1);
+      ast_print_tree(data.right, depth + 1);
+      break;
+    }
   }
 }
 
@@ -124,7 +139,7 @@ AST *parse_primary(const char **expr) {
   return NULL;
 }
 
-// Function to parse multiplication
+// Function to parse multiplication and division
 AST *parse_mul(const char **expr) {
   AST *left = parse_primary(expr);
   
@@ -134,6 +149,12 @@ AST *parse_mul(const char **expr) {
     (*expr)++;
     AST *right = parse_mul(expr); // Recursive call to parse_mul
     return AST_NEW(AST_MUL, left, right);
+  }
+  
+  if (**expr == '/') {
+    (*expr)++;
+    AST *right = parse_mul(expr); // Recursive call to parse_mul
+    return AST_NEW(AST_DIV, left, right);
   }
   
   return left;
